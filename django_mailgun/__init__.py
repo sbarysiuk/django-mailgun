@@ -1,4 +1,7 @@
+# -*- coding: utf-8 -*-
+
 import requests
+
 from django.conf import settings
 from django.core.mail.backends.base import BaseEmailBackend
 from django.core.mail.message import sanitize_address
@@ -18,9 +21,9 @@ class MailgunBackend(BaseEmailBackend):
     def __init__(self, fail_silently=False, *args, **kwargs):
         access_key, server_name = (kwargs.pop('access_key', None),
                                    kwargs.pop('server_name', None))
-    
+
         super(MailgunBackend, self).__init__(
-                        fail_silently=fail_silently, 
+                        fail_silently=fail_silently,
                         *args, **kwargs)
 
         try:
@@ -46,20 +49,35 @@ class MailgunBackend(BaseEmailBackend):
 
     def _send(self, email_message):
         """A helper method that does the actual sending."""
-        if not email_message.recipients():
+
+        if not email_message.to:
             return False
+
         from_email = sanitize_address(email_message.from_email, email_message.encoding)
-        recipients = [sanitize_address(addr, email_message.encoding)
-                      for addr in email_message.recipients()]
+
+        to = [ sanitize_address(addr, email_message.encoding)
+               for addr in email_message.to ]
+
+
+
+        data = {
+            "to": ", ".join(to),
+            "from": from_email,
+        }
+
+        if email_message.cc:
+            data['cc'] = [ sanitize_address(addr, email_message.encoding)
+                           for addr in email_message.cc ]
+
+        if email_message.bcc:
+            data['bcc'] = [ sanitize_address(addr, email_message.encoding)
+                            for addr in email_message.bcc ]
 
         try:
             r = requests.\
                 post(self._api_url + "messages.mime",
                      auth=("api", self._access_key),
-                     data={
-                            "to": ", ".join(recipients),
-                            "from": from_email,
-                         },
+                     data=data,
                      files={
                             "message": StringIO(email_message.message().as_string()),
                          }
@@ -72,6 +90,7 @@ class MailgunBackend(BaseEmailBackend):
         if r.status_code != 200:
             if not self.fail_silently:
                 raise MailgunAPIError(r)
+
             return False
 
         return True
