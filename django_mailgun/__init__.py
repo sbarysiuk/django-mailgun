@@ -77,7 +77,12 @@ class MailgunBackend(BaseEmailBackend):
             data['o:dkim'] = extra_headers.pop('X-Mailgun-Dkim')
 
         if len(extra_headers) > 0:
-            data.update({ 'h:{0}'.format(k) : v for k, v in extra_headers.iteritems() })
+            headers = {}
+
+            for k, v in extra_headers.iteritems():
+                headers['h:{0}'.format(k)] = v
+
+            data.update(headers)
 
         try:
             r = requests.\
