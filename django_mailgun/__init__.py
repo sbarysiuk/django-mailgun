@@ -58,20 +58,26 @@ class MailgunBackend(BaseEmailBackend):
         to = [ sanitize_address(addr, email_message.encoding)
                for addr in email_message.to ]
 
-
-
         data = {
-            "to": ", ".join(to),
+            "to": ', '.join(to),
             "from": from_email,
         }
 
         if email_message.cc:
-            data['cc'] = [ sanitize_address(addr, email_message.encoding)
-                           for addr in email_message.cc ]
+            data['cc'] = ', '.join([ sanitize_address(addr, email_message.encoding)
+                           for addr in email_message.cc ])
 
         if email_message.bcc:
-            data['bcc'] = [ sanitize_address(addr, email_message.encoding)
-                            for addr in email_message.bcc ]
+            data['bcc'] = ', '.join([ sanitize_address(addr, email_message.encoding)
+                            for addr in email_message.bcc ])
+
+        extra_headers = email_message.extra_headers
+
+        if 'X-Mailgun-Dkim' in extra_headers:
+            data['o:dkim'] = extra_headers.pop('X-Mailgun-Dkim')
+
+        if len(extra_headers) > 0:
+            data.update({ 'h:{0}'.format(k) : v for k, v in extra_headers.iteritems() })
 
         try:
             r = requests.\
