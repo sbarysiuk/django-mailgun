@@ -94,7 +94,7 @@ class MailgunBackend(BaseEmailBackend):
 
         if email_message.attachments:
             for attachment in email_message.attachments:
-                if isinstance(attchment, MIMEBase):
+                if isinstance(attachment, MIMEBase):
                     files.add(attachment.get_filename(), attachment.get_payload())
                 else:
                     files.add(attachment[0], attachment[1])
