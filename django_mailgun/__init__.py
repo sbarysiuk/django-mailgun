@@ -2,6 +2,9 @@
 
 import requests
 
+from email.MIMEBase import MIMEBase
+from webob.multidict import MultiDict
+
 from django.conf import settings
 from django.core.mail.backends.base import BaseEmailBackend
 from django.core.mail.message import sanitize_address
@@ -84,15 +87,24 @@ class MailgunBackend(BaseEmailBackend):
 
             data.update(headers)
 
+        data['subject'] = email_message.subject
+        data['text'] = email_message.body
+
+        files = MultiDict()
+
+        if email_message.attachments:
+            for attachment in email_message.attachments:
+                if isinstance(attchment, MIMEBase):
+                    files.add(attachment.get_filename(), attachment.get_payload())
+                else:
+                    files.add(attachment[0], attachment[1])
+
         try:
             r = requests.\
-                post(self._api_url + "messages.mime",
+                post(self._api_url + "messages",
                      auth=("api", self._access_key),
                      data=data,
-                     files={
-                            "message": StringIO(email_message.message().as_string()),
-                         }
-                     )
+                     files=files)
         except:
             if not self.fail_silently:
                 raise
