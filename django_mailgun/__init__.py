@@ -74,6 +74,12 @@ class MailgunBackend(BaseEmailBackend):
             data['bcc'] = ', '.join([ sanitize_address(addr, email_message.encoding)
                             for addr in email_message.bcc ])
 
+        if hasattr(email_message, 'alternatives') and email_message.alternatives:
+            for alt in email_message.alternatives:
+                if alt[1] == 'text/html':
+                    data['html'] = alt[0]
+                    break
+
         extra_headers = email_message.extra_headers
 
         if 'X-Mailgun-Dkim' in extra_headers:
