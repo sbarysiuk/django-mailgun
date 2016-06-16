@@ -58,7 +58,9 @@ class MailgunBackend(BaseEmailBackend):
 
         from_email = sanitize_address(email_message.from_email, email_message.encoding)
 
-        to = [ sanitize_address(addr, email_message.encoding)
+        # \n can be added by python core email address encoder if address contains unicode symbols from
+        # different charsets. see https://github.com/python/cpython/blame/2.7/Lib/email/header.py#L339
+        to = [ sanitize_address(addr, email_message.encoding).replace('\n', '')
                for addr in email_message.to ]
 
         data = {
